@@ -6,7 +6,7 @@ import tkinter as tk
 class VisualGridHuntGame:
     """A flexible Pacman-style grid environment with support for configurable opponents and larger scales."""
 
-    def __init__(self, width=10, height=10, num_food=10, num_opponents=2, custom_walls=None):
+    def __init__(self, width=10, height=10, num_food=10, num_opponents=2, num_traps=4, custom_walls=None):
         self.width = width
         self.height = height
         self.agent_pos = [0, 0]  # Starting position (x, y)
@@ -35,6 +35,17 @@ class VisualGridHuntGame:
             if tuple(op_pos) != (0, 0) and tuple(op_pos) not in self.walls and tuple(op_pos) not in self.food_positions:
                 self.opponents.append(op_pos)
 
+#Set up toxic traps (IT24101516)-Question 2.1
+        self.toxic_traps = set()
+        while len(self.toxic_traps) < num_traps:
+            tx = random.randint(0, self.width - 1)
+            ty = random.randint(0, self.height - 1)
+            trap_tuple = (tx, ty)
+            if (trap_tuple != (0, 0)
+                    and trap_tuple not in self.walls
+                    and trap_tuple not in self.food_positions):
+                self.toxic_traps.add(trap_tuple)
+
         self.score = 0
         self.steps = 0
         self.collision = False
@@ -45,6 +56,8 @@ class VisualGridHuntGame:
             'opponent_positions': [list(op) for op in self.opponents],
             'smells_food': tuple(self.agent_pos) in self.food_positions,
             'hit_wall': tuple(self.agent_pos) in self.walls,
+            # Toxin sensor(IT24101516) - Q 2.2
+            'smells_toxin': tuple(self.agent_pos) in self.toxic_traps,
             'collision': self.collision,
             'score': self.score,
             'remaining_food': len(self.food_positions)
@@ -73,6 +86,10 @@ class VisualGridHuntGame:
             self.food_positions.remove(tuple_pos)
             self.score += 20
 
+        #Trap penalty (IT24101516)    
+        if tuple_pos in self.toxic_traps:
+            self.score -= 15
+
         for op in self.opponents:
             move = random.choice(['Up', 'Down', 'Left', 'Right', 'Stay'])
             if move == 'Up' and op[1] < self.height - 1:
@@ -99,7 +116,7 @@ class GridGameGUI:
         self.root = root
         self.root.title("IT3012 - Scalable Multi-Agent Grid Hunt")
 
-        self.env = VisualGridHuntGame(width=width, height=height, num_food=num_food, num_opponents=num_opponents,
+        self.env = VisualGridHuntGame(width=width, height=height, num_food=num_food, num_traps=4, num_opponents=num_opponents,
                                       custom_walls=walls)
 
         # Dynamically calculate cell size so the total canvas fits nicely within a 600x600 window ceiling
@@ -145,6 +162,14 @@ class GridGameGUI:
             y1 = (self.env.height - 1 - fy) * self.cell_size + offset
             self.canvas.create_oval(x1, y1, x1 + self.cell_size * 0.5, y1 + self.cell_size * 0.5, fill="#f59e0b",
                                     outline="#d97706")
+
+        # Render traps as purple diamonds (IT24101516) - Q 2.3
+        for tx, ty in self.env.toxic_traps:
+            cx = tx * self.cell_size + self.cell_size / 2
+            cy = (self.env.height - 1 - ty) * self.cell_size + self.cell_size / 2
+            half = self.cell_size * 0.3
+            points = [cx, cy - half, cx + half, cy, cx, cy + half, cx - half, cy]
+            self.canvas.create_polygon(points, fill="#7c3aed", outline="#5b21b6")
 
         for ox, oy in self.env.opponents:
             offset = self.cell_size * 0.2
