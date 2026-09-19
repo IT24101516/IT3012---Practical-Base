@@ -1,6 +1,7 @@
 # visual_grid_game.py
 import random
 import tkinter as tk
+from agent import SearchAgent # Lab 03 - IT24101516
 
 
 class VisualGridHuntGame:
@@ -72,7 +73,14 @@ class VisualGridHuntGame:
                 ahead[1] < 0 or
                 ahead[1] >= self.height
             ),
-            'food_here': tuple(self.agent_pos) in self.food_positions
+            'food_here': tuple(self.agent_pos) in self.food_positions,
+
+            #Lab 03 Step 1.1 - IT24101516
+
+            'agent_pos': tuple(self.agent_pos),
+            'grid_size': (self.width, self.height),
+            'walls': list(self.walls),
+            'all_food': list(self.food_positions) 
         }
         """
         return {
@@ -87,6 +95,135 @@ class VisualGridHuntGame:
             'remaining_food': len(self.food_positions)
         }
         """
+
+    def execute_action(self, action: str):
+        self.steps += 1
+
+    # Week 03 - Search Agent actions
+        if action in ['Up', 'Down', 'Left', 'Right']:
+
+            new_pos = list(self.agent_pos)
+
+            if action == 'Up':
+                new_pos[1] += 1
+
+            elif action == 'Down':
+                new_pos[1] -= 1
+
+            elif action == 'Left':
+                new_pos[0] -= 1
+
+            elif action == 'Right':
+             new_pos[0] += 1
+
+        # Check grid boundaries and walls
+        if (
+            0 <= new_pos[0] < self.width
+            and 0 <= new_pos[1] < self.height
+            and tuple(new_pos) not in self.walls
+        ):
+            self.agent_pos = new_pos
+
+            tuple_pos = tuple(self.agent_pos)
+
+            # Collect food
+            if tuple_pos in self.food_positions:
+                self.food_positions.remove(tuple_pos)
+                self.score += 20
+
+            # Trap penalty
+            if tuple_pos in self.toxic_traps:
+                self.score -= 15
+
+        # Lab 02 - Turn action
+        elif action == 'Turn_Left':
+
+            if self.facing == 'Up':
+                self.facing = 'Left'
+
+            elif self.facing == 'Left':
+                self.facing = 'Down'
+
+            elif self.facing == 'Down':
+                self.facing = 'Right'
+
+            elif self.facing == 'Right':
+                self.facing = 'Up'
+
+        # Lab 02 - Suck action
+        elif action == 'Suck':
+
+            tuple_pos = tuple(self.agent_pos)
+
+            if tuple_pos in self.food_positions:
+                self.food_positions.remove(tuple_pos)
+                self.score += 20
+
+        # Lab 02 - Move Forward
+        elif action == 'Move_Forward':
+
+            new_pos = list(self.agent_pos)
+
+            if self.facing == 'Up':
+                new_pos[1] += 1
+
+            elif self.facing == 'Down':
+                new_pos[1] -= 1
+
+            elif self.facing == 'Left':
+                new_pos[0] -= 1
+
+            elif self.facing == 'Right':
+                new_pos[0] += 1
+
+            if (
+                0 <= new_pos[0] < self.width
+                and 0 <= new_pos[1] < self.height
+            ):
+
+                if tuple(new_pos) in self.walls:
+                    self.score -= 5
+
+                else:
+                    self.agent_pos = new_pos
+
+                    tuple_pos = tuple(self.agent_pos)
+
+                    if tuple_pos in self.food_positions:
+                        self.food_positions.remove(tuple_pos)
+                        self.score += 20
+
+                    if tuple_pos in self.toxic_traps:
+                        self.score -= 15
+
+        # Week 03 - do nothing if no path/action is available
+        elif action == 'Stay':
+            pass
+
+        # Move opponents
+        for op in self.opponents:
+
+            move = random.choice(
+                ['Up', 'Down', 'Left', 'Right', 'Stay']
+            )
+
+            if move == 'Up' and op[1] < self.height - 1:
+                op[1] += 1
+
+            elif move == 'Down' and op[1] > 0:
+                op[1] -= 1
+
+            elif move == 'Left' and op[0] > 0:
+                op[0] -= 1
+
+            elif move == 'Right' and op[0] < self.width - 1:
+                op[0] += 1
+
+            if op == self.agent_pos:
+                self.score -= 50
+                self.collision = True
+
+    """
     def execute_action(self, action: str):
         self.steps += 1
 # Updating the environment according to the SimpleReflexAgent's actions(IT24101516 Lab 02)
@@ -115,7 +252,7 @@ class VisualGridHuntGame:
             elif self.facing == 'Right' :
                 new_pos[0] += 1
 
-        """
+        
         if action == 'Up':
             new_pos[1] = min(self.height - 1, new_pos[1] + 1)
         elif action == 'Down':
@@ -124,7 +261,8 @@ class VisualGridHuntGame:
             new_pos[0] = max(0, new_pos[0] - 1)
         elif action == 'Right':
             new_pos[0] = min(self.width - 1, new_pos[0] + 1)
-        """
+        
+            
         if (0 <= new_pos[0] < self.width and 0 <= new_pos[1] < self.height):
 
             if tuple(new_pos) in self.walls:
@@ -156,6 +294,7 @@ class VisualGridHuntGame:
             if op == self.agent_pos:
                 self.score -= 50
                 self.collision = True
+    """
 
     def is_done(self) -> bool:
         return len(self.food_positions) == 0 or self.steps >= 60 or self.collision
@@ -254,7 +393,10 @@ class GridGameGUI:
         #self.agent = SimpleReflexAgent()
 
         #Creating the ModelBasedAgent Lab 02 (IT24101516) for step 1.3
-        self.agent = ModelBasedAgent()
+        #self.agent = ModelBasedAgent()
+
+        # Lab 03 - Search Agent IT24101516
+        self.agent = SearchAgent()
 
         # Dynamically calculate cell size so the total canvas fits nicely within a 600x600 window ceiling
         max_canvas_dim = 600
