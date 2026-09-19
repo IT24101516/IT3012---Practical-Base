@@ -74,7 +74,7 @@ class VisualGridHuntGame:
             ),
             'food_here': tuple(self.agent_pos) in self.food_positions
         }
-"""
+        """
         return {
             'agent_pos': list(self.agent_pos),
             'opponent_positions': [list(op) for op in self.opponents],
@@ -86,7 +86,7 @@ class VisualGridHuntGame:
             'score': self.score,
             'remaining_food': len(self.food_positions)
         }
-"""
+        """
     def execute_action(self, action: str):
         self.steps += 1
 # Updating the environment according to the SimpleReflexAgent's actions(IT24101516 Lab 02)
@@ -115,7 +115,7 @@ class VisualGridHuntGame:
             elif self.facing == 'Right' :
                 new_pos[0] += 1
 
-"""
+        """
         if action == 'Up':
             new_pos[1] = min(self.height - 1, new_pos[1] + 1)
         elif action == 'Down':
@@ -124,23 +124,23 @@ class VisualGridHuntGame:
             new_pos[0] = max(0, new_pos[0] - 1)
         elif action == 'Right':
             new_pos[0] = min(self.width - 1, new_pos[0] + 1)
-"""
-            if (0 <= new_pos[0] < self.width and 0 <= new_pos[1] < self.height):
+        """
+        if (0 <= new_pos[0] < self.width and 0 <= new_pos[1] < self.height):
 
-                if tuple(new_pos) in self.walls:
-                    self.score -= 5
-                else:
-                    self.agent_pos = new_pos
+            if tuple(new_pos) in self.walls:
+                self.score -= 5
+            else:
+                self.agent_pos = new_pos
 
-                    tuple_pos = tuple(self.agent_pos)
+                tuple_pos = tuple(self.agent_pos)
 
-                    if tuple_pos in self.food_positions:
-                        self.food_positions.remove(tuple_pos)
-                        self.score += 20
+                if tuple_pos in self.food_positions:
+                    self.food_positions.remove(tuple_pos)
+                    self.score += 20
 
-                    #Trap penalty (IT24101516)
-                    if tuple_pos in self.toxic_traps:
-                        self.score -= 15
+                #Trap penalty (IT24101516)
+                if tuple_pos in self.toxic_traps:
+                    self.score -= 15
 
         for op in self.opponents:
             move = random.choice(['Up', 'Down', 'Left', 'Right', 'Stay'])
