@@ -3,6 +3,8 @@
 import random
 from collections import deque
 import heapq
+# Lab 04 - IT24101516 - Used for Euclidean distance calculation
+import math
 
 class GreedyGridAgent:
     """A simple agent that tries to move around systematically to clear the grid."""
@@ -21,7 +23,9 @@ class SearchAgent:
 
     def __init__(self):
         self.plan = []
-        self.active_algo = 'BFS'
+        #self.active_algo = 'BFS'
+        # Lab 04 - IT24101516 - Use A* as the active search algorithm
+        self.active_algo = 'AStar'
 
     def get_neighbors(self, state, grid_size, walls):
         x, y = state
@@ -47,6 +51,20 @@ class SearchAgent:
                 neighbors.append((new_state, action))
 
         return neighbors
+
+    # Lab 04 - IT24101516 - Step 1.1
+    # Calculates Manhattan distance between current position and goal
+    def manhattan_distance(self, pos, goal):
+        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
+
+
+    # Lab 04 - IT24101516 - Step 1.1
+    # Calculates straight-line Euclidean distance between current position and goal
+    def euclidean_distance(self, pos, goal):
+        return math.sqrt(
+            (pos[0] - goal[0]) ** 2 +
+            (pos[1] - goal[1]) ** 2
+        )
 
     def bfs_search(self, start, goal, grid_size, walls):
 
@@ -135,6 +153,96 @@ class SearchAgent:
 
         return []
 
+
+    # Lab 04 - IT24101516 - Step 1.2
+    # A* Search uses path cost g(n) and heuristic h(n)
+    def astar_search(
+            self,
+            start_pos,
+            goal_pos,
+            walls,
+            grid_size,
+            heuristic_type='manhattan'
+    ):
+
+        frontier = []
+        reached_states = set()
+
+        # Calculate heuristic value for the starting position
+        if heuristic_type == 'euclidean':
+            h_cost = self.euclidean_distance(start_pos, goal_pos)
+        else:
+            h_cost = self.manhattan_distance(start_pos, goal_pos)
+
+        # Starting path cost
+        g_cost = 0
+
+        # f(n) = g(n) + h(n)
+        f_cost = g_cost + h_cost
+
+        # Store:
+        # (f cost, g cost, current position, path)
+        heapq.heappush(
+            frontier,
+            (f_cost, g_cost, start_pos, [])
+        )
+
+        while frontier:
+
+            f_cost, g_cost, current_pos, path = heapq.heappop(frontier)
+
+            # Skip already explored states
+            if current_pos in reached_states:
+                continue
+
+            # Check whether goal is reached
+            if current_pos == goal_pos:
+                return path
+
+            reached_states.add(current_pos)
+
+            # Check all valid neighboring cells
+            for next_pos, action in self.get_neighbors(
+                    current_pos,
+                    grid_size,
+                    walls
+            ):
+
+                if next_pos not in reached_states:
+
+                    # Every movement costs 1
+                    new_g_cost = g_cost + 1
+
+                    # Calculate heuristic
+                    if heuristic_type == 'euclidean':
+                        new_h_cost = self.euclidean_distance(
+                            next_pos,
+                            goal_pos
+                        )
+                    else:
+                        new_h_cost = self.manhattan_distance(
+                            next_pos,
+                            goal_pos
+                        )
+
+                    # f(n) = g(n) + h(n)
+                    new_f_cost = new_g_cost + new_h_cost
+
+                    new_path = path + [action]
+
+                    heapq.heappush(
+                        frontier,
+                        (
+                            new_f_cost,
+                            new_g_cost,
+                            next_pos,
+                            new_path
+                        )
+                    )
+
+        return []
+    
+
     def sense_and_act(self, percept: dict) -> str:
 
         if not self.plan:
@@ -183,6 +291,18 @@ class SearchAgent:
                     goal,
                     grid_size,
                     walls
+                )
+
+            # Lab 04 - IT24101516 - Step 1.3
+            # Creates a path to the selected food using A* Search
+            elif self.active_algo == 'AStar':
+
+                self.plan = self.astar_search(
+                    start,
+                    goal,
+                    walls,
+                    grid_size,
+                    'manhattan'
                 )
 
         if self.plan:
